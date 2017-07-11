@@ -1,4 +1,4 @@
-﻿namespace log4net.Appender
+namespace log4net.Appender
 
 open System
 open System.Collections.Generic
@@ -47,7 +47,7 @@ module internal Model =
 type KinesisAppender () as this =
     inherit AppenderSkeleton()
 
-    static let kinesis = Amazon.AWSClientFactory.CreateAmazonKinesisClient()
+    static let kinesis  = new AmazonKinesisClient()
 
     let genWorker _ = 
         let agent = Agent<LogEvent>.Start(fun inbox ->
