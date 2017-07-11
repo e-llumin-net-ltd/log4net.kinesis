@@ -41,15 +41,12 @@ module internal Model =
 
 type KinesisAppender () as this =
     inherit AppenderSkeleton()
-
-    static let config = new AmazonKinesisConfig(RegionEndpoint = Amazon.RegionEndpoint.EnumerableAllRegions.FirstOrDefault(fun endpoint -> endpoint.SystemName = KinesisAppender.Region))
-    static let sharedFile = new SharedCredentialsFile()
     
-    static let kinesis = 
-            match sharedFile.TryGetProfile KinesisAppender.Profile with
-            | true, value -> new AmazonKinesisClient(config) // If you supply Profile you should supply Region as well (for now)
-            | _   -> new AmazonKinesisClient() // Fall back to config
-        
+    [<DefaultValue>]
+    val mutable _kinesis : AmazonKinesisClient
+
+    let sharedFile = new SharedCredentialsFile()
+    
     let genWorker _ = 
         let agent = Agent<LogEvent>.Start(fun inbox ->
             async {
@@ -61,7 +58,7 @@ type KinesisAppender () as this =
                     let req = new PutRecordRequest(StreamName   = this.StreamName,
                                                    PartitionKey = Guid.NewGuid().ToString(),
                                                    Data         = stream)
-                    do! kinesis.PutRecordAsync(req) |> Async.AwaitTask |> Async.Ignore
+                    do! this._kinesis.PutRecordAsync(req) |> Async.AwaitTask |> Async.Ignore
             })
         agent.Error.Add(fun _ -> ()) // swallow exceptions so to stop agents from be coming useless after exception..
 
@@ -71,7 +68,11 @@ type KinesisAppender () as this =
     
     let initCount = ref 0
     let init () = 
-        // make sure we only initialize the workers array once
+        this._kinesis <- match sharedFile.TryGetProfile this.Profile with
+                           | true, value -> let config = new AmazonKinesisConfig(RegionEndpoint = Amazon.RegionEndpoint.EnumerableAllRegions.FirstOrDefault(fun endpoint -> endpoint.SystemName = this.Region))
+                                            new AmazonKinesisClient(config) // If you supply Profile you should supply Region as well (for now)
+                           | _   -> new AmazonKinesisClient() // Fall back to config
+        //make sure we only initialize the workers array once
         if Interlocked.CompareExchange(initCount, 1, 0) = 0 then
             workers <- { 1..this.LevelOfConcurrency } |> Seq.map genWorker |> Seq.toArray
 
@@ -86,10 +87,12 @@ type KinesisAppender () as this =
              Interlocked.CompareExchange(workerIdx, idx', idx) |> ignore
              workers.[idx'].Post evt
 
+    
+
     member val StreamName = "" with get, set
     member val LevelOfConcurrency = 10 with get, set
-    static member val Region = "" with get, set
-    static member val Profile = "" with get, set
+    member val Region = "" with get, set
+    member val Profile = "" with get, set
 
     override this.Append(loggingEvent : LoggingEvent) = 
         let exnMessage, stackTrace = 
