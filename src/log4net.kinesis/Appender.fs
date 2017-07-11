@@ -4,7 +4,7 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Threading
-
+open Amazon.Kinesis
 open Amazon.Kinesis.Model
 
 open log4net.Appender
