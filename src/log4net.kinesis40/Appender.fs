@@ -1,9 +1,11 @@
 namespace log4net.Appender
 
 open System
-open System.Collections.Generic
 open System.IO
+open System.Linq
 open System.Threading
+open Amazon.Runtime
+open Amazon.Runtime.CredentialManagement
 open Amazon.Kinesis
 open Amazon.Kinesis.Model
 
@@ -46,7 +48,13 @@ module internal Model =
 type KinesisAppender () as this =
     inherit AppenderSkeleton()
 
-    static let kinesis  = new AmazonKinesisClient()
+    static let config = new AmazonKinesisConfig(RegionEndpoint = Amazon.RegionEndpoint.EnumerableAllRegions.FirstOrDefault(fun endpoint -> endpoint.SystemName = KinesisAppender.Region))
+    static let sharedFile = new SharedCredentialsFile()
+    
+    static let kinesis = 
+            match sharedFile.TryGetProfile KinesisAppender.Profile with
+            | true, value -> new AmazonKinesisClient(config) // If you supply Profile you should supply Region as well (for now)
+            | _   -> new AmazonKinesisClient() // Fall back to config
 
     let genWorker _ = 
         let agent = Agent<LogEvent>.Start(fun inbox ->
@@ -86,6 +94,8 @@ type KinesisAppender () as this =
 
     member val StreamName = "" with get, set
     member val LevelOfConcurrency = 10 with get, set
+    static member val Region = "" with get, set
+    static member val Profile = "" with get, set
 
     override this.Append(loggingEvent : LoggingEvent) = 
         let exnMessage, stackTrace = 
