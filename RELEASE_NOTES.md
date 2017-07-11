@@ -10,3 +10,6 @@
 
 #### 0.1.3 - Jul 12,2017
 * Support AWS Profiles
+#### 0.1.4 - Jul 12,2017
+
+* Support AWS Profiles from log4net config
