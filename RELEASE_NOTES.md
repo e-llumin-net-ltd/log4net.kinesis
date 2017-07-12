@@ -19,3 +19,8 @@
 #### 0.1.5 - Jul 12,2017
 
 * Get AWS Credentials from profile
+
+
+#### 0.1.6 - Jul 12,2017
+
+* Support Partition key as a parameter
