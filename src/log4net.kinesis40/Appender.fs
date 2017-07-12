@@ -61,10 +61,12 @@ type KinesisAppender () as this =
                     let! evt = inbox.Receive()
                     let payload = evt.ToJson() |> System.Text.Encoding.UTF8.GetBytes
                     use stream  = new MemoryStream(payload)
-                    let req = new PutRecordRequest(StreamName   = this.StreamName,
-                                                   PartitionKey = (if this.PartitionKey = ""
-                                                                  then Guid.NewGuid().ToString()
-                                                                  else this.PartitionKey),
+                    let req = new PutRecordRequest(StreamName   = (if isNull(log4net.GlobalContext.Properties.Item("StreamName"))
+                                                                   then this.StreamName
+                                                                   else log4net.GlobalContext.Properties.Item("StreamName").ToString()),
+                                                   PartitionKey = (if isNull(log4net.GlobalContext.Properties.Item("PartitionKey"))
+                                                                   then Guid.NewGuid().ToString()
+                                                                   else log4net.GlobalContext.Properties.Item("PartitionKey").ToString()),
                                                    Data         = stream)
                     do! this._kinesis.PutRecordAsync(req) |> Async.Ignore
             })
@@ -76,15 +78,20 @@ type KinesisAppender () as this =
     
     let initCount = ref 0
     let init () = 
-        
-        // make sure we only initialize the workers array once
+        //make sure we only initialize the workers array once
         if Interlocked.CompareExchange(initCount, 1, 0) = 0 then
-             let region = Amazon.RegionEndpoint.EnumerableAllRegions.FirstOrDefault(fun endpoint -> endpoint.SystemName = this.Region)
-             this._kinesis <- match sharedFile.TryGetProfile this.Profile with
+            
+            let region = Amazon.RegionEndpoint.EnumerableAllRegions.FirstOrDefault(fun endpoint -> endpoint.SystemName = if isNull(log4net.GlobalContext.Properties.Item("Region")) then this.Region 
+                                                                                                                         else log4net.GlobalContext.Properties.Item("Region").ToString())
+
+            this._kinesis <- match sharedFile.TryGetProfile (if isNull(log4net.GlobalContext.Properties.Item("Profile"))
+                                                             then this.Profile 
+                                                             else log4net.GlobalContext.Properties.Item("Profile").ToString())
+                               with
                                | true, profile -> let config = new AmazonKinesisConfig(RegionEndpoint = region)  // If you supply Profile you should supply Region as well (for now)
                                                   new AmazonKinesisClient(profile.GetAWSCredentials(sharedFile),config)
                                | _   -> new AmazonKinesisClient() // Fall back to config
-             workers <- { 1..this.LevelOfConcurrency } |> Seq.map genWorker |> Seq.toArray
+            workers <- { 1..this.LevelOfConcurrency } |> Seq.map genWorker |> Seq.toArray
 
     let workerIdx = ref 0
     let send evt = 
