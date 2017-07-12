@@ -33,5 +33,6 @@
 
 * Escape large text areas as may contain invalid chars
 
-#### 0.1.8 - Jul 12,2017
+#### 0.1.9 - Jul 12,2017
+
 * Parameters from lg4net config or GlobalContext.Properites
