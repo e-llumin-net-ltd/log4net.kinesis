@@ -28,3 +28,6 @@
 #### 0.1.7 - Jul 12,2017
 
 * Escape large text areas as may contain invalid chars
+
+#### 0.1.8 - Jul 12,2017
+* Escape large text areas as may contain invalid chars
