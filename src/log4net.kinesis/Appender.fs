@@ -57,9 +57,9 @@ type KinesisAppender () as this =
                     let payload = evt.ToJson() |> System.Text.Encoding.UTF8.GetBytes
                     use stream  = new MemoryStream(payload)
                     let req = new PutRecordRequest(StreamName   = this.StreamName,
-                                                   PartitionKey = (if this.PartionKey = ""
+                                                   PartitionKey = (if this.PartitionKey = ""
                                                                   then Guid.NewGuid().ToString()
-                                                                  else this.PartionKey),
+                                                                  else this.PartitionKey),
                                                    Data         = stream)
                     do! this._kinesis.PutRecordAsync(req) |> Async.AwaitTask |> Async.Ignore
             })
@@ -97,7 +97,7 @@ type KinesisAppender () as this =
     member val LevelOfConcurrency = 10 with get, set
     member val Region = "" with get, set
     member val Profile = "" with get, set
-    member val PartionKey = "" with get, set
+    member val PartitionKey = "" with get, set
 
     override this.Append(loggingEvent : LoggingEvent) = 
         let exnMessage, stackTrace = 
