@@ -8,8 +8,14 @@
 * Support AWS Seperate packages
 * Update to F# 4.4.1
 
-#### 0.1.3 - Jul 12,2017
-* Support AWS Profiles
+#### 0.1.3 - Jul 12,2017
+
+* Support AWS Profiles
+
 #### 0.1.4 - Jul 12,2017
 
 * Support AWS Profiles from log4net config
+
+#### 0.1.5 - Jul 12,2017
+
+* Get AWS Credentials from profile

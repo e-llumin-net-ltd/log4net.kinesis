@@ -74,13 +74,15 @@ type KinesisAppender () as this =
     
     let initCount = ref 0
     let init () = 
-        this._kinesis <- match sharedFile.TryGetProfile this.Profile with
-                           | true, value -> let config = new AmazonKinesisConfig(RegionEndpoint = Amazon.RegionEndpoint.EnumerableAllRegions.FirstOrDefault(fun endpoint -> endpoint.SystemName = this.Region))
-                                            new AmazonKinesisClient(config) // If you supply Profile you should supply Region as well (for now)
-                           | _   -> new AmazonKinesisClient() // Fall back to config
+        
         // make sure we only initialize the workers array once
         if Interlocked.CompareExchange(initCount, 1, 0) = 0 then
-            workers <- { 1..this.LevelOfConcurrency } |> Seq.map genWorker |> Seq.toArray
+             let region = Amazon.RegionEndpoint.EnumerableAllRegions.FirstOrDefault(fun endpoint -> endpoint.SystemName = this.Region)
+             this._kinesis <- match sharedFile.TryGetProfile this.Profile with
+                               | true, profile -> let config = new AmazonKinesisConfig(RegionEndpoint = region)  // If you supply Profile you should supply Region as well (for now)
+                                                  new AmazonKinesisClient(profile.GetAWSCredentials(sharedFile),config)
+                               | _   -> new AmazonKinesisClient() // Fall back to config
+             workers <- { 1..this.LevelOfConcurrency } |> Seq.map genWorker |> Seq.toArray
 
     let workerIdx = ref 0
     let send evt = 
