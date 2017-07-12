@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Linq
 open System.Threading
+open System.Web
 open Amazon.Runtime
 open Amazon.Runtime.CredentialManagement
 open Amazon.Kinesis
@@ -109,9 +110,9 @@ type KinesisAppender () as this =
                     Level               = loggingEvent.Level.Name
                     Timestamp           = loggingEvent.TimeStamp
                     ThreadName          = loggingEvent.ThreadName
-                    CallerInfo          = loggingEvent.LocationInformation.FullInfo
-                    Message             = loggingEvent.RenderedMessage
-                    ExceptionMessage    = exnMessage
-                    StackTrace          = stackTrace
+                    CallerInfo          = HttpUtility.JavaScriptStringEncode(loggingEvent.LocationInformation.FullInfo)
+                    Message             = HttpUtility.JavaScriptStringEncode(loggingEvent.RenderedMessage)
+                    ExceptionMessage    = HttpUtility.JavaScriptStringEncode(exnMessage)
+                    StackTrace          = HttpUtility.JavaScriptStringEncode(stackTrace)
                   }
         send evt

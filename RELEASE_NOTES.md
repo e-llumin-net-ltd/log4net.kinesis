@@ -24,3 +24,7 @@
 #### 0.1.6 - Jul 12,2017
 
 * Support Partition key as a parameter
+
+#### 0.1.7 - Jul 12,2017
+
+* Escape large text areas as may contain invalid chars
